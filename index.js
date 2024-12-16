@@ -28,5 +28,9 @@ app.get('/api/persons', (request, response) => {
     response.json(persons)
 })
 
-const PORT=3001
+app.get('/info', (request, response) => {
+    response.send(`<div><p>Phonebook has info for ${persons.length} people</p><br /><p>${Date()}</p></div>`)
+})
+
+const PORT = 3001
 app.listen(PORT)
