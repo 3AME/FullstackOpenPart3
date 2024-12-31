@@ -21,8 +21,10 @@ const App = () => {
       .getAll()
       .then(initialPersons => {
         setPersons(initialPersons)
+        // console.log('initialPersons',initialPersons)
       })
   }, [])
+
 
   const addPerson = (event) => {
     // console.log('clicked')
@@ -133,7 +135,7 @@ const App = () => {
     personsService
       .deletePerson(id)
       .then(returnedPerson => {
-        const newPersons = persons.filter((item) => item.id !== returnedPerson.id)
+        const newPersons = persons.filter((item) => item.id !== id)
         setPersons(newPersons)
         // console.log(returnedPerson)
       })
@@ -144,6 +146,7 @@ const App = () => {
 
   const phonebook = isFilter ? personsToShow : persons
   // console.log("filter?",isFilter, phonebook)
+
 
   return (
     <div>
@@ -158,7 +161,7 @@ const App = () => {
         numberChange={handleNumberChange}
       />
       <h2>Numbers</h2>
-      {phonebook.map(person =>
+      {phonebook?.map(person =>
         <Persons
           key={person.id}
           name={person.name}
