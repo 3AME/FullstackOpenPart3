@@ -108,7 +108,7 @@ const App = () => {
   }
 
   const handleFilter = (event) => {
-    console.log('filterValue', event.target.value)
+    // console.log('filterValue', event.target.value)
     const query = event.target.value
     if (query.length === 0) {
       setIsFilter(false)

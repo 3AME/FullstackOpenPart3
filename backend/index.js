@@ -25,31 +25,10 @@ const errorHandler = (error, request, response, next) => {
     next(error)
 }
 
-let persons = [
-    {
-        "id": "1",
-        "name": "Arto Hellas",
-        "number": "040-123456"
-    },
-    {
-        "id": "2",
-        "name": "Ada Lovelace",
-        "number": "39-44-5323523"
-    },
-    {
-        "id": "3",
-        "name": "Dan Abramov",
-        "number": "12-43-234345"
-    },
-    {
-        "id": "4",
-        "name": "Mary Poppendieck",
-        "number": "39-23-6423122"
-    }
-]
-
-app.get('/info', (request, response) => {
-    response.send(`<div><p>Phonebook has info for ${Person.length} people</p><br /><p>${Date()}</p></div>`)
+app.get('/info', async (request, response) => {
+    const count = await Person.countDocuments()
+    console.log('count', count)
+    response.send(`<div><p>Phonebook has info for ${count} people</p><br /><p>${Date()}</p></div>`)
 })
 
 app.get('/api/persons', (request, response) => {
@@ -66,10 +45,10 @@ app.get('/api/persons/:id', (request, response) => {
 
 app.delete('/api/persons/:id', (request, response, next) => {
     Person.findByIdAndDelete(request.params.id)
-    .then(result=>{
-        response.status(204).end()
-    })
-    .catch(error => next(error))
+        .then(result => {
+            response.status(204).end()
+        })
+        .catch(error => next(error))
 })
 
 const generateID = () => {
@@ -77,10 +56,29 @@ const generateID = () => {
     return id
 }
 
-app.post('/api/persons', (request, response) => {
+async function addOrUpdatePerson(name) {
+    const existName = await Person.findOne({ name: name })
+    // console.log('existName',existName)
+    if (existName) {
+        const id = existName._id
+        return id
+    } else {
+        return null
+    }
+}
+
+app.post('/api/persons', async (request, response) => {
     const body = request.body
+    const name = body.name
     console.log(body.name)
-    const existName = persons.find(person => person.name === body.name)
+
+    const existId = await addOrUpdatePerson(name)
+    // console.log('existId', existId.toString())
+
+    // const existName = Person.findOne({ name: `${name}` }, {_id:1})
+    // console.log('exsitName',exsitName.id)
+    // const existName = Person.find(person => person.name === body.name)
+    // console.log('exsitName',existName)
     if (!body.name) {
         return response.status(404).json({
             error: 'name is missing'
@@ -89,18 +87,43 @@ app.post('/api/persons', (request, response) => {
         return response.status(404).json({
             error: 'number is missing'
         })
-    } else if (existName) {
-        return response.status(404).json({
-            error: 'name must be unique'
+    } 
+    if (existId) {
+        const id = existId.toString()
+        // console.log('id', id)
+        const updatedPerson = await fetch(`/api/persons/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({number: body.number})
+        })
+        response.json(updatedPerson)
+        // return response.status(404).json({
+        //     error: 'name must be unique'
+        // })
+    } else {
+        const person = new Person({
+            name: body.name,
+            number: body.number,
+        })
+        person.save().then(savedPerson => {
+            response.json(savedPerson)
         })
     }
-    const person = new Person({
+})
+
+app.put('/api/persons/:id', (request, response, next) => {
+    const body = request.body
+    const person = {
         name: body.name,
         number: body.number,
-    }) 
-    person.save().then(savedPerson => {
-        response.json(savedPerson)
+    }
+    Person.findByIdAndUpdate(request.params.id, person, { new: true })
+    .then(updatedPerson => {
+        response.json(updatedPerson)
     })
+    .catch(error => next(error))
 })
 
 const PORT = process.env.PORT
