@@ -5,11 +5,20 @@ const cors = require('cors')
 const Person = require('./models/person')
 
 const app = express()
-
+app.use(cors())
 app.use(express.static('dist'))
 
+const requestLogger = (request, response, next) => {
+    console.log('Method:', request.method)
+    console.log('Path:  ', request.path)
+    console.log('Body:  ', request.body)
+    console.log('---')
+    next()
+  }
+
 app.use(express.json())
-app.use(cors())
+app.use(requestLogger)
+
 
 morgan.token('data', function (req, res) {
     return JSON.stringify(req.body)
@@ -21,6 +30,8 @@ const errorHandler = (error, request, response, next) => {
     console.error(error.message)
     if (error.name === 'CastError') {
         return response.status(400).send({ error: 'malformatted id' })
+    } else if (error.name === 'ValidationError') {
+        return response.status(400).json({ error: error.message })
     }
     next(error)
 }
@@ -67,27 +78,17 @@ async function addOrUpdatePerson(name) {
     }
 }
 
-app.post('/api/persons', async (request, response) => {
+app.post('/api/persons', async (request, response, next) => {
     const body = request.body
     const name = body.name
     console.log(body.name)
 
     const existId = await addOrUpdatePerson(name)
-    // console.log('existId', existId.toString())
-
-    // const existName = Person.findOne({ name: `${name}` }, {_id:1})
-    // console.log('exsitName',exsitName.id)
-    // const existName = Person.find(person => person.name === body.name)
-    // console.log('exsitName',existName)
-    if (!body.name) {
-        return response.status(404).json({
-            error: 'name is missing'
-        })
-    } else if (!body.number) {
+    if (!body.number) {
         return response.status(404).json({
             error: 'number is missing'
         })
-    } 
+    }
     if (existId) {
         const id = existId.toString()
         // console.log('id', id)
@@ -96,7 +97,7 @@ app.post('/api/persons', async (request, response) => {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({number: body.number})
+            body: JSON.stringify({ number: body.number })
         })
         response.json(updatedPerson)
         // return response.status(404).json({
@@ -107,9 +108,11 @@ app.post('/api/persons', async (request, response) => {
             name: body.name,
             number: body.number,
         })
-        person.save().then(savedPerson => {
-            response.json(savedPerson)
-        })
+        person.save()
+            .then(savedPerson => {
+                response.json(savedPerson)
+            })
+            .catch(error => next(error))
     }
 })
 
@@ -119,12 +122,14 @@ app.put('/api/persons/:id', (request, response, next) => {
         name: body.name,
         number: body.number,
     }
-    Person.findByIdAndUpdate(request.params.id, person, { new: true })
-    .then(updatedPerson => {
-        response.json(updatedPerson)
-    })
-    .catch(error => next(error))
+    Person.findByIdAndUpdate(request.params.id, person, { new: true, runValidators:true, context: 'query' })
+        .then(updatedPerson => {
+            response.json(updatedPerson)
+        })
+        .catch(error => next(error))
 })
+
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
