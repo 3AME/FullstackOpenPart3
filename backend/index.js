@@ -14,7 +14,7 @@ const requestLogger = (request, response, next) => {
     console.log('Body:  ', request.body)
     console.log('---')
     next()
-  }
+}
 
 app.use(express.json())
 app.use(requestLogger)
@@ -32,7 +32,7 @@ const errorHandler = (error, request, response, next) => {
         return response.status(400).send({ error: 'malformatted id' })
     } else if (error.name === 'ValidationError') {
         return response.status(400).json({ error: error.message })
-    }
+    } 
     next(error)
 }
 
@@ -81,39 +81,39 @@ async function addOrUpdatePerson(name) {
 app.post('/api/persons', async (request, response, next) => {
     const body = request.body
     const name = body.name
-    console.log(body.name)
-
+    // console.log(body.name)
     const existId = await addOrUpdatePerson(name)
-    if (!body.number) {
-        return response.status(404).json({
-            error: 'number is missing'
-        })
-    }
-    if (existId) {
-        const id = existId.toString()
-        // console.log('id', id)
-        const updatedPerson = await fetch(`/api/persons/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ number: body.number })
-        })
-        response.json(updatedPerson)
-        // return response.status(404).json({
-        //     error: 'name must be unique'
-        // })
-    } else {
-        const person = new Person({
-            name: body.name,
-            number: body.number,
-        })
-        person.save()
-            .then(savedPerson => {
-                response.json(savedPerson)
+    try {
+        if (existId) {
+            const id = existId.toString()
+            // console.log('id', id)
+            const updatedPerson = await fetch(`/api/persons/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ number: body.number })
             })
-            .catch(error => next(error))
+            response.json(updatedPerson)
+            // return response.status(404).json({
+            //     error: 'name must be unique'
+            // })
+        } else {
+            const person = new Person({
+                name: body.name,
+                number: body.number,
+            })
+            person.save()
+                .then(savedPerson => {
+                    response.json(savedPerson)
+                })
+                .catch(error => next(error))
+        }
     }
+    catch (error) {
+        next(error)
+    }
+
 })
 
 app.put('/api/persons/:id', (request, response, next) => {
@@ -122,7 +122,9 @@ app.put('/api/persons/:id', (request, response, next) => {
         name: body.name,
         number: body.number,
     }
-    Person.findByIdAndUpdate(request.params.id, person, { new: true, runValidators:true, context: 'query' })
+    Person.findByIdAndUpdate(request.params.id,
+        person,
+        { new: true, runValidators: true, context: 'query' })
         .then(updatedPerson => {
             response.json(updatedPerson)
         })

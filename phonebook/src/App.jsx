@@ -13,7 +13,7 @@ const App = () => {
   const [filterValue, setFilterValue] = useState('')
   const [personsToShow, setPersonsToShow] = useState([])
   const [isFilter, setIsFilter] = useState(false)
-  const [notification, setNotification] = useState({type:'', text:''})
+  const [notification, setNotification] = useState({ type: '', text: '' })
 
   useEffect(() => {
     // console.log('effect')
@@ -46,12 +46,13 @@ const App = () => {
           .updateNumber(id, updatedPerson)
           .then(returnedPerson => {
             setNotification(
-              {type:'message',
-                text:`Changed the number of '${returnedPerson.name}' `
+              {
+                type: 'message',
+                text: `Changed the number of '${returnedPerson.name}' `
               }
             )
             setTimeout(() => {
-              setNotification({type:'', text:''})
+              setNotification({ type: '', text: '' })
             }, 5000)
             setPersons(persons.map(person => person.id === id ? returnedPerson : person))
             // console.log(persons)
@@ -60,12 +61,13 @@ const App = () => {
           .catch(error => {
             console.log(error)
             setNotification(
-              {type:'error',
+              {
+                type: 'error',
                 text: `Information of '${personWithDifferentNumber.name}' has already removed from server`
               }
             )
             setTimeout(() => {
-              setNotification({type:'', text:''})
+              setNotification({ type: '', text: '' })
             }, 5000)
           })
       }
@@ -79,25 +81,27 @@ const App = () => {
         .create(newNameObject)
         .then(returnedPerson => {
           setNotification(
-            {type:'message',
+            {
+              type: 'message',
               text: `Added '${returnedPerson.name}' `
             }
           )
           setTimeout(() => {
-            setNotification({type:'', text:''})
+            setNotification({ type: '', text: '' })
           }, 5000)
           setPersons(persons.concat(returnedPerson))
         })
         .catch(error => {
           setNotification(
-            {type:'error',
+            {
+              type: 'error',
               text: `${error.response.data.error}' `
             }
           )
           setTimeout(() => {
-            setNotification({type:'', text:''})
+            setNotification({ type: '', text: '' })
           }, 5000)
-          console.log(error.response.data.error)
+          // console.log(error.response.data.error)
         })
     }
     setNewName('')
@@ -139,17 +143,20 @@ const App = () => {
   }
 
   const deletePersonOf = (id, name) => {
-    window.confirm(`Delete ${name} ?`)
-    personsService
-      .deletePerson(id)
-      .then(returnedPerson => {
-        const newPersons = persons.filter((item) => item.id !== id)
-        setPersons(newPersons)
-        // console.log(returnedPerson)
-      })
-      .catch(error => {
-        console.log(error)
-      })
+    // window.confirm(`Delete ${name} ?`)
+    // console.log('delete', window.confirm(`Delete ${name} ?`))
+    if (window.confirm(`Delete ${name} ?`)) {
+      personsService
+        .deletePerson(id)
+        .then(returnedPerson => {
+          const newPersons = persons.filter((item) => item.id !== id)
+          setPersons(newPersons)
+          // console.log(returnedPerson)
+        })
+        .catch(error => {
+          console.log(error)
+        })
+    }
   }
 
   const phonebook = isFilter ? personsToShow : persons
@@ -159,7 +166,7 @@ const App = () => {
   return (
     <div>
       <h1>Phonebook</h1>
-      <Notification type={notification.type}  text={notification.text}/>
+      <Notification type={notification.type} text={notification.text} />
       <Filter value={filterValue} onChange={handleFilter} />
       <h2>add a new</h2>
       <PersonForm onSubmit={addPerson}
